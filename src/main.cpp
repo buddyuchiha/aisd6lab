@@ -40,20 +40,46 @@ public:
         return v;
     }
 
+    void add_edge(const Vertex& from, const Vertex& to,const Distance& d) {
+        add_vertex(from);
+        add_vertex(to);
+        adjacency_list[from][to] = d;
+    }
+    bool remove_edge(const Vertex& from, const Vertex& to) {
+        if (!has_vertex(from) || !has_vertex(to)) return false;
+        auto it = adjacency_list[from].find(to);
+        if (it == adjacency_list[from].end()) return false;
+        adjacency_list[from].erase(it);
+        return true;
+    }
+    bool remove_edge(const Edge& e) {
+        return remove_edge(e.from, e.to);
+    }
+    bool has_edge(const Vertex& from, const Vertex& to) const {
+        if (!has_vertex(from) || !has_vertex(to)) return false;
+        return adjacency_list.at(from).find(to) != adjacency_list.at(from).end();
+    }
+    bool has_edge(const Edge& e) const {
+        return has_edge(e.from, e.to);
+    }
 
-    ////проверка-добавление-удаление ребер
-    //void add_edge(const Vertex& from, const Vertex& to, 
-    //    const Distance& d);
-    //bool remove_edge(const Vertex& from, const Vertex& to);
-    //bool remove_edge(const Edge& e); //c учетом расстояния
-    //bool has_edge(const Vertex& from, const Vertex& to) const;
-    //bool has_edge(const Edge& e) const; //c учетом расстояния в Edge
+    vector<Edge> edges(const Vertex& vertex) {
+        vector<Edge> edge_list;
+        if (!has_vertex(vertex)) return edge_list;
+        for (const auto& [to, distance] : adjacency_list[vertex]) {
+            edge_list.push_back({ vertex, to, distance });
+        }
+        return edge_list;
+    }
 
-    ////получение всех ребер, выходящих из вершины
-    //std::vector<Edge> edges(const Vertex& vertex);
+    size_t order() const {
+        return adjacency_list.size();
+    }
 
-    //size_t order() const; //порядок 
-    //size_t degree(const Vertex& v) const; //степень вершины
+    size_t degree(const Vertex& v) const {
+        if (!has_vertex(v)) return 0;
+        return adjacency_list.at(v).size();
+    }
 
 
     ////поиск кратчайшего пути
