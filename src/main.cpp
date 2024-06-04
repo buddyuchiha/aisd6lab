@@ -1,6 +1,11 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
+#include <limits>
+#include <functional>
+#include <queue>
 using namespace std;
 
 
@@ -82,17 +87,105 @@ public:
     }
 
 
-    ////поиск кратчайшего пути
-    //std::vector<Edge> shortest_path(const Vertex& from,
-    //    const Vertex& to) const;
-    ////обход
-    //std::vector<Vertex>  walk(const Vertex& start_vertex)const;
+    vector<Edge> shortest_path(const Vertex& from, const Vertex& to) const {
+        unordered_map<Vertex, Distance> distances;
+        unordered_map<Vertex, Vertex> predecessors;
+
+        for (const auto& [vertex, _] : adjacency_list) {
+            distances[vertex] = numeric_limits<Distance>::infinity();
+        }
+        distances[from] = 0;
+
+        size_t V = adjacency_list.size();
+        for (size_t i = 1; i < V; ++i) {
+            for (const auto& [u, edges] : adjacency_list) {
+                for (const auto& [v, w] : edges) {
+                    if (distances[u] + w < distances[v]) {
+                        distances[v] = distances[u] + w;
+                        predecessors[v] = u;
+                    }
+                }
+            }
+        }
+
+        for (const auto& [u, edges] : adjacency_list) {
+            for (const auto& [v, w] : edges) {
+                if (distances[u] + w < distances[v]) {
+                    std::cerr << "Graph contains a negative-weight cycle\n";
+                    return {};
+                }
+            }
+        }
+
+        vector<Edge> path;
+        for (Vertex v = to; v != from; v = predecessors[v]) {
+            if (predecessors.find(v) == predecessors.end()) return {};
+            path.push_back({ predecessors[v], v, adjacency_list.at(predecessors[v]).at(v) });
+        }
+        reverse(path.begin(), path.end());
+        return path;
+    }
+
+    vector<Vertex> walk(const Vertex& start_vertex) const {
+        vector<Vertex> result;
+        if (!has_vertex(start_vertex)) return result;
+
+        unordered_set<Vertex> visited;
+        queue<Vertex> q;
+
+        q.push(start_vertex);
+        visited.insert(start_vertex);
+
+        while (!q.empty()) {
+            Vertex current = q.front();
+            q.pop();
+            result.push_back(current);
+
+            for (const auto& [neighbor, _] : adjacency_list.at(current)) {
+                if (visited.find(neighbor) == visited.end()) {
+                    visited.insert(neighbor);
+                    q.push(neighbor);
+                }
+            }
+        }
+
+        return result;
+    }
 
 
 private:
-    unordered_map<Vertex, std::unordered_map<Vertex, Distance>> adjacency_list;
+    unordered_map<Vertex, unordered_map<Vertex, Distance>> adjacency_list;
 };
 
 int main() {
+    Graph<int, double> graph;
+
+    // Добавляем вершины и рёбра
+    graph.add_edge(1, 2, 5.0);
+    graph.add_edge(1, 3, 3.0);
+    graph.add_edge(2, 3, 2.0);
+    graph.add_edge(2, 4, 7.0);
+    graph.add_edge(3, 4, 4.0);
+
+    // Проверяем методы
+    cout << "Vertices in the graph: ";
+    for (const auto& vertex : graph.vertices()) {
+        cout << vertex << " ";
+    }
+    cout << endl;
+
+    cout << "Edges from vertex 1: ";
+    for (const auto& edge : graph.edges(1)) {
+        cout << "(" << edge.from << "->" << edge.to << ", distance: " << edge.distance << ") ";
+    }
+    cout << endl;
+
+    cout << "Shortest path from 1 to 4: ";
+    vector<Graph<int, double>::Edge> shortest_path = graph.shortest_path(1, 4);
+    for (const auto& edge : shortest_path) {
+        cout << "(" << edge.from << "->" << edge.to << ", distance: " << edge.distance << ") ";
+    }
+    cout << endl;
+
     return 0;
 }
