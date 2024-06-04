@@ -151,41 +151,129 @@ public:
 
         return result;
     }
+    
+    Vertex find_optimal_warehouse() const {
+        Vertex optimal_warehouse;
+        Distance min_max_distance = std::numeric_limits<Distance>::infinity();
 
+        for (const auto& [start, _] : adjacency_list) {
+            std::unordered_map<Vertex, Distance> distances;
+            std::unordered_map<Vertex, Vertex> predecessors;
 
+            for (const auto& [vertex, _] : adjacency_list) {
+                distances[vertex] = std::numeric_limits<Distance>::infinity();
+            }
+            distances[start] = 0;
+
+            size_t V = adjacency_list.size();
+            for (size_t i = 1; i < V; ++i) {
+                for (const auto& [u, edges] : adjacency_list) {
+                    for (const auto& [v, w] : edges) {
+                        if (distances[u] + w < distances[v]) {
+                            distances[v] = distances[u] + w;
+                            predecessors[v] = u;
+                        }
+                    }
+                }
+            }
+
+            for (const auto& [u, edges] : adjacency_list) {
+                for (const auto& [v, w] : edges) {
+                    if (distances[u] + w < distances[v]) {
+                        std::cerr << "Graph contains a negative-weight cycle\n";
+                        return {};
+                    }
+                }
+            }
+
+            Distance max_distance = 0;
+            for (const auto& [vertex, distance] : distances) {
+                if (distance > max_distance && distance < std::numeric_limits<Distance>::infinity()) {
+                    max_distance = distance;
+                }
+            }
+
+            if (max_distance < min_max_distance) {
+                min_max_distance = max_distance;
+                optimal_warehouse = start;
+            }
+        }
+
+        return optimal_warehouse;
+    }
+  
 private:
     unordered_map<Vertex, unordered_map<Vertex, Distance>> adjacency_list;
 };
 
 int main() {
-    Graph<int, double> graph;
+    Graph<int> g;
 
-    // Добавляем вершины и рёбра
-    graph.add_edge(1, 2, 5.0);
-    graph.add_edge(1, 3, 3.0);
-    graph.add_edge(2, 3, 2.0);
-    graph.add_edge(2, 4, 7.0);
-    graph.add_edge(3, 4, 4.0);
+    // Добавление вершин
+    g.add_vertex(1);
+    g.add_vertex(2);
+    g.add_vertex(3);
 
-    // Проверяем методы
-    cout << "Vertices in the graph: ";
-    for (const auto& vertex : graph.vertices()) {
-        cout << vertex << " ";
+    // Проверка наличия вершин
+    cout << "Graph has vertex 1: " << g.has_vertex(1) << endl;
+    cout << "Graph has vertex 4: " << g.has_vertex(4) << endl;
+
+    // Добавление рёбер
+    g.add_edge(1, 2, 1.0);
+    g.add_edge(1, 3, 2.5);
+    g.add_edge(2, 3, 1.5);
+
+    // Проверка наличия рёбер
+    cout << "Graph has edge 1->2: " << g.has_edge(1, 2) << endl;
+    cout << "Graph has edge 2->1: " << g.has_edge(2, 1) << endl;
+
+    // Получение всех вершин
+    vector<int> vertices = g.vertices();
+    cout << "Vertices in graph: ";
+    for (int v : vertices) {
+        cout << v << " ";
     }
     cout << endl;
 
+    // Получение всех рёбер из вершины
+    vector<Graph<int>::Edge> edges = g.edges(1);
     cout << "Edges from vertex 1: ";
-    for (const auto& edge : graph.edges(1)) {
-        cout << "(" << edge.from << "->" << edge.to << ", distance: " << edge.distance << ") ";
+    for (const auto& edge : edges) {
+        cout << "(" << edge.from << "->" << edge.to << ", " << edge.distance << ") ";
     }
     cout << endl;
 
-    cout << "Shortest path from 1 to 4: ";
-    vector<Graph<int, double>::Edge> shortest_path = graph.shortest_path(1, 4);
-    for (const auto& edge : shortest_path) {
-        cout << "(" << edge.from << "->" << edge.to << ", distance: " << edge.distance << ") ";
+    // Удаление ребра и проверка
+    g.remove_edge(1, 2);
+    cout << "Graph has edge 1->2 after removal: " << g.has_edge(1, 2) << endl;
+
+    // Удаление вершины и проверка
+    g.remove_vertex(3);
+    cout << "Graph has vertex 3 after removal: " << g.has_vertex(3) << endl;
+
+    // Проверка степени вершины
+    cout << "Degree of vertex 1: " << g.degree(1) << endl;
+
+    // Обход в ширину
+    vector<int> bfs = g.walk(1);
+    cout << "BFS walk starting from vertex 1: ";
+    for (int v : bfs) {
+        cout << v << " ";
     }
     cout << endl;
+
+    // Поиск кратчайшего пути
+    g.add_edge(1, 2, 1.0);
+    g.add_edge(2, 3, 1.5);
+    vector<Graph<int>::Edge> shortestPath = g.shortest_path(1, 3);
+    cout << "Shortest path from 1 to 3: ";
+    for (const auto& edge : shortestPath) {
+        cout << "(" << edge.from << " -> " << edge.to << ", " << edge.distance << ") ";
+    }
+    cout << endl;
+
+    int optimal_warehouse = g.find_optimal_warehouse();
+    std::cout << "Optimal warehouse location: " << optimal_warehouse << std::endl;
 
     return 0;
 }
